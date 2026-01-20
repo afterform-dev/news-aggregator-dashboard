@@ -1,21 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import './App.css';
 
 function App() {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/news')
-      .then(res => res.json())
-      .then(data => {
-        setNews(data.articles || []);
-        setLoading(false);
-      })
-      .catch(err => {
+    const fetchNews = async () => {
+      try {
+        const response = await axios.get('http://localhost:8000/api/news');
+        setNews(response.data.articles || []);
+      } catch (err) {
         console.error(err);
+        setError('Не удалось загрузить новости. Попробуйте позже.');
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    fetchNews();
   }, []);
 
   return (
@@ -23,19 +28,21 @@ function App() {
       <header className="App-header">
         <h1>📰 Новости Санкт-Петербурга</h1>
       </header>
-      
+
       <main className="container">
-        {loading ? (
-          <p>Загрузка...</p>
-        ) : (
+        {loading && <p className="status">Загрузка...</p>}
+        {error && <p className="status error">{error}</p>}
+        {!loading && !error && (
           <div className="news-grid">
-            {news.map(article => (
-              <div key={article.id} className="news-card">
+            {news.map((article) => (
+              <article key={article.id} className="news-card">
                 <span className="category">{article.category}</span>
                 <h2>{article.title}</h2>
                 <p>{article.content}</p>
-                <small>{new Date(article.published_at).toLocaleString('ru-RU')}</small>
-              </div>
+                <div className="card-footer">
+                  <small>{new Date(article.published_at).toLocaleString('ru-RU')}</small>
+                </div>
+              </article>
             ))}
           </div>
         )}
